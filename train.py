@@ -1,11 +1,9 @@
 import torch
 from model.cnnet import cnn
 import torch.nn as nn
-from torch.utils.data import random_split
-from util.dataLoader import gestureDataset
 from torchvision import transforms
-from torch.utils.data import DataLoader
 import util.engine
+import util.data_loader
 
 data_path = "./data/"
 num_epochs = 100
@@ -22,23 +20,10 @@ transform = transforms.Compose(
     ]
 )
 
-dataset = gestureDataset(root_dir=data_path, transform=transform)
 
-num_data = len(dataset)
-num_train = int(0.8 * num_data)
-num_val = int(0.1 * num_data)
-num_test = num_data - num_train - num_val
-
-train_data, val_data, test_data = random_split(
-    dataset, [num_train, num_val, num_test], generator=torch.Generator().manual_seed(42)
+train_loader, val_loaader, test_loader = util.data_loader.create_dataloaders(
+    "./data/", transform, 100
 )
-
-train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
-val_loader = DataLoader(val_data, batch_size=32)
-test_loader = DataLoader(test_data)
-
-trainSteps = len(train_loader.dataset) // batch_size
-valSteps = len(val_loader.dataset) // batch_size
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
