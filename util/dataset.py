@@ -1,25 +1,23 @@
 import os
-import random
 from PIL import Image
 import torch
-from torch.utils.data import Dataset
+import random
 from matplotlib import pyplot as plt
+from torch.utils.data import Dataset
+import torchvision.transforms as transforms
 
 
 class gestureDataset(Dataset):
     def __init__(self, root_dir, transform=None):
-        """
-        Args:
-            root_dir (string): Directory with all the images, structured with subfolders.
-            transform (callable, optional): Optional transform to be applied on a sample.
-        """
         self.root_dir = root_dir
         self.transform = transform
         self.image_paths = []
         self.labels = []
 
-        for label in range(27):
-            label_dir = os.path.join(root_dir, str(label))
+        label_dirs = sorted(os.listdir(root_dir))
+
+        for label_idx, label_name in enumerate(label_dirs):
+            label_dir = os.path.join(root_dir, label_name)
             if not os.path.isdir(label_dir):
                 continue
 
@@ -27,7 +25,7 @@ class gestureDataset(Dataset):
                 if img_name.endswith(("png", "jpg", "jpeg", "bmp", "tiff")):
                     img_path = os.path.join(label_dir, img_name)
                     self.image_paths.append(img_path)
-                    self.labels.append(label)
+                    self.labels.append(label_idx)
 
     def __len__(self):
         return len(self.image_paths)
@@ -42,27 +40,47 @@ class gestureDataset(Dataset):
 
         if self.transform:
             image = self.transform(image)
+        else:
+            image = transforms.ToTensor()(image)
 
         return image, label
 
-    def show_random_images(dataset, num_images=16):
-        fig, axes = plt.subplots(4, 4, figsize=(12, 12))
+    def __getshape__(self):
+        return (self.__len__(), *self.__getitem__(0)[0].shape)
+
+    def display_random_images(self, n, classes=None, display_shape=False):
+        random_samples_idx = random.sample(range(len(self)), k=n)
+
+        grid_size = int(n**0.5)
+        if grid_size**2 < n:
+            grid_size += 1
+
+        fig, axes = plt.subplots(grid_size, grid_size, figsize=(16, 16))
         axes = axes.flatten()
 
-        indices = random.sample(range(len(dataset)), num_images)
-        for ax, idx in zip(axes, indices):
-            image, label = dataset[idx]
-            image = image.permute(1, 2, 0)
+        for i, targ_sample in enumerate(random_samples_idx):
+            targ_image, targ_label = self[targ_sample]
 
-            ax.imshow(image)
-            ax.set_title(f"Label: {label}")
+            targ_image_adjust = targ_image.permute(1, 2, 0)
+
+            ax = axes[i]
+            ax.imshow(targ_image_adjust)
             ax.axis("off")
+            title = (
+                f"class: {classes[targ_label]}" if classes else f"class: {targ_label}"
+            )
+            if display_shape:
+                title += f"\nshape: {targ_image_adjust.shape}"
+            ax.set_title(title, fontsize=8)
+
+        for j in range(i + 1, grid_size**2):
+            axes[j].axis("off")
 
         plt.tight_layout()
         plt.show()
 
-    def show_one_image_per_directory(dataset, num_dirs=27):
-        fig, axes = plt.subplots(3, 9, figsize=(18, 6))
+    def show_one_image_per_directory(dataset, num_dirs=27, rows=3, cols=9):
+        fig, axes = plt.subplots(rows, cols, figsize=(cols * 2, rows * 2))
         axes = axes.flatten()
 
         seen_labels = set()
@@ -75,9 +93,12 @@ class gestureDataset(Dataset):
                 seen_labels.add(label)
                 image = image.permute(1, 2, 0)
                 axes[count].imshow(image)
-                axes[count].set_title(f"Label: {label}")
+                axes[count].set_title(f"Label: {label}", fontsize=8)
                 axes[count].axis("off")
                 count += 1
+
+        for j in range(count, len(axes)):
+            axes[j].axis("off")
 
         plt.tight_layout()
         plt.show()
