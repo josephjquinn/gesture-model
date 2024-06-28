@@ -5,9 +5,10 @@ import random
 from matplotlib import pyplot as plt
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
+import pickle
 
 
-class gestureDataset(Dataset):
+class imageDataset(Dataset):
     def __init__(self, root_dir, transform=None):
         self.root_dir = root_dir
         self.transform = transform
@@ -102,3 +103,32 @@ class gestureDataset(Dataset):
 
         plt.tight_layout()
         plt.show()
+
+
+class landmarkDataset(Dataset):
+    def __init__(self, pickle_file):
+        self.data = self.load_data(pickle_file)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getshape__(self):
+        return (self.__len__(), *self.__getitem__(0)[0].shape)
+
+    def __getitem__(self, idx):
+        sample = self.data[idx]
+        landmarks = sample["landmarks"]
+        label = sample["label"]
+
+        landmarks = torch.tensor(landmarks, dtype=torch.float32)
+        label = torch.tensor(label)
+        return landmarks, label
+
+    def load_data(self, pickle_file):
+        with open(pickle_file, "rb") as f:
+            data = pickle.load(f)
+        flattened_data = []
+        for frame_landmarks in data:
+            for sample in frame_landmarks:
+                flattened_data.append(sample)
+        return flattened_data
