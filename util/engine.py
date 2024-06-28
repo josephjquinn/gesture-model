@@ -12,6 +12,7 @@ def train_step(
     model.train()
 
     train_loss, train_acc = 0, 0
+    stepcount = 0
 
     for batch, (X, y) in enumerate(dataloader):
         X, y = X.to(device), y.to(device)
@@ -21,6 +22,12 @@ def train_step(
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        stepcount = stepcount + 1
+
+        print(
+            f"Batch [{batch}/{len(dataloader)}], X.shape: {list(X.shape)}, y.shape: {list(y.shape)}"
+        )
+
         y_pred_class = torch.argmax(torch.softmax(y_pred, dim=1), dim=1)
         train_acc += (y_pred_class == y).sum().item() / len(y_pred)
     train_loss = train_loss / len(dataloader)
