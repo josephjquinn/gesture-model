@@ -1,11 +1,17 @@
 import os
 from PIL import Image
 import torch
+import numpy as np
 import random
 from matplotlib import pyplot as plt
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 import pickle
+import mediapipe as mp
+
+mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles
+mp_hands = mp.solutions.hands
 
 
 class imageDataset(Dataset):
@@ -132,3 +138,40 @@ class landmarkDataset(Dataset):
             for sample in frame_landmarks:
                 flattened_data.append(sample)
         return flattened_data
+
+    def show_random_landmarks(self, n=5):
+        random_samples_idx = random.sample(range(len(self)), k=n)
+
+        fig, axes = plt.subplots(1, n, figsize=(n * 4, 4))
+
+        for i, targ_sample in enumerate(random_samples_idx):
+            landmarks, label = self[targ_sample]
+            num_landmarks = len(landmarks)
+            annotated_image = np.ones((512, 512, 3), dtype=np.uint8) * 255
+
+            # Convert landmarks to the format expected by MediaPipe
+            landmark_list = []
+            for landmark in landmarks:
+                x, y, z = landmark
+                landmark_list.append(
+                    mp.framework.formats.landmark_pb2.NormalizedLandmark(x=x, y=y, z=z)
+                )
+
+            hand_landmarks = mp.framework.formats.landmark_pb2.NormalizedLandmarkList(
+                landmark=landmark_list
+            )
+
+            mp_drawing.draw_landmarks(
+                image=annotated_image,
+                landmark_list=hand_landmarks,
+                connections=mp_hands.HAND_CONNECTIONS,
+                landmark_drawing_spec=mp_drawing_styles.get_default_hand_landmarks_style(),
+                connection_drawing_spec=mp_drawing_styles.get_default_hand_connections_style(),
+            )
+
+            axes[i].imshow(annotated_image)
+            axes[i].set_title(f"Label: {label.item()}", fontsize=8)
+            axes[i].axis("off")
+
+        plt.tight_layout()
+        plt.show()
