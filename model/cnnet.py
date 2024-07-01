@@ -1,6 +1,5 @@
+import torch
 import torch.nn as nn
-
-
 import torch.nn.functional as F
 
 
@@ -10,15 +9,21 @@ class cnn(nn.Module):
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
+
+        # Calculate the output size after conv2 and pooling
+        self.fc1_input_size = (
+            16 * 59 * 59
+        )  # Adjust based on actual output size after flattening
+
+        self.fc1 = nn.Linear(self.fc1_input_size, 120)
         self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
+        self.fc3 = nn.Linear(84, 30)
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))  # -> n, 6, 14, 14
-        x = self.pool(F.relu(self.conv2(x)))  # -> n, 16, 5, 5
-        x = x.view(-1, 16 * 5 * 5)  # -> n, 400
-        x = F.relu(self.fc1(x))  # -> n, 120
-        x = F.relu(self.fc2(x))  # -> n, 84
-        x = self.fc3(x)  # -> n, 10
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = torch.flatten(x, 1)  # Flatten all dimensions except batch
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
         return x
