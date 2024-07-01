@@ -1,5 +1,6 @@
 import torch
 from typing import Dict, List, Tuple
+from matplotlib import pyplot as plt
 
 
 def train_step(
@@ -92,4 +93,24 @@ def train(
         results["test_loss"].append(test_loss)
         results["test_acc"].append(test_acc)
 
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+        fig.suptitle("Training and Test Metrics")
+        ax1.cla()
+        ax1.plot(results["train_loss"], label="train_loss")
+        ax1.plot(results["test_loss"], label="test_loss")
+        ax1.set_xlabel("Epoch")
+        ax1.set_ylabel("Loss")
+        ax1.set_title("Training and Test Loss")
+        ax1.legend()
+
+        ax2.cla()
+        ax2.plot(results["train_acc"], label="train_acc")
+        ax2.plot(results["test_acc"], label="test_acc")
+        ax2.set_xlabel("Epoch")
+        ax2.set_ylabel("Accuracy")
+        ax2.set_title("Training and Test Accuracy")
+        ax2.legend()
+
+        fig.canvas.draw()
+        plt.pause(0.1)
     return results
