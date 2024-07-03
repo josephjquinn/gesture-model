@@ -28,3 +28,52 @@ class PatchEmbedding(nn.Module):
         x_patched = self.patch(x)
         x_flattened = torch.flatten(x_patched, start_dim=2, end_dim=3)
         return x_flattened.permute(0, 2, 1)
+
+
+class MultiheadSelfAttentionBlock(nn.Module):
+    def __init__(
+        self, embedding_dim: int = 768, num_heads: int = 12, attn_dropout: float = 0
+    ):
+        super().__init__()
+
+        self.layer_norm = nn.LayerNorm(normalized_shape=embedding_dim)
+
+        self.multihead_attn = nn.MultiheadAttention(
+            embed_dim=embedding_dim,
+            num_heads=num_heads,
+            dropout=attn_dropout,
+            batch_first=True,
+        )
+
+    def forward(self, x):
+        x = self.layer_norm(x)
+        attn, _ = self.multihead_attn(query=x, key=x, value=x, need_weights=False)
+        return attn
+
+
+class MLPBlock(nn.Module):
+    def __init__(
+        self,
+        embedding_dim: int = 768,  # Hidden Size D
+        mlp_size: int = 3072,  # MLP size
+        dropout: float = 0.1,
+    ):
+        super().__init__()
+
+        self.layer_norm = nn.LayerNorm(normalized_shape=embedding_dim)
+
+        self.mlp = nn.Sequential(
+            nn.Linear(in_features=embedding_dim, out_features=mlp_size),
+            nn.GELU(),
+            nn.Dropout(p=dropout),
+            nn.Linear(
+                in_features=mlp_size,
+                out_features=embedding_dim,
+            ),
+            nn.Dropout(p=dropout),
+        )
+
+    def forward(self, x):
+        x = self.layer_norm(x)
+        x = self.mlp(x)
+        return x
