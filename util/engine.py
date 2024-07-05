@@ -30,7 +30,7 @@ def train_step(
         )
 
         y_pred_class = torch.argmax(torch.softmax(y_pred, dim=1), dim=1)
-        train_acc += (y_pred_class == y).sum().item() / len(y_pred)
+        train_acc += (y_pred_class == y).sum().item() / len(y)
     train_loss = train_loss / len(dataloader)
     train_acc = train_acc / len(dataloader)
     return train_loss, train_acc
@@ -51,7 +51,7 @@ def test_step(
             loss = loss_fn(test_pred_logits, y)
             test_loss += loss.item()
             test_pred_labels = test_pred_logits.argmax(dim=1)
-            test_acc += (test_pred_labels == y).sum().item() / len(test_pred_labels)
+            test_acc += (test_pred_labels == y).sum().item() / len(y)
     test_loss = test_loss / len(dataloader)
     test_acc = test_acc / len(dataloader)
     return test_loss, test_acc
@@ -86,6 +86,7 @@ def train(
     model: torch.nn.Module,
     train_dataloader: torch.utils.data.DataLoader,
     test_dataloader: torch.utils.data.DataLoader,
+    val_dataloader: torch.utils.data.DataLoader,
     optimizer: torch.optim.Optimizer,
     loss_fn: torch.nn.Module,
     epochs: int,
@@ -105,27 +106,31 @@ def train(
             optimizer=optimizer,
             device=device,
         )
-        test_loss, test_acc = test_step(
-            model=model, dataloader=test_dataloader, loss_fn=loss_fn, device=device
+        val_loss, val_acc = test_step(
+            model=model, dataloader=val_dataloader, loss_fn=loss_fn, device=device
         )
 
         print(
             f"Epoch: {epoch+1} | "
             f"train_loss: {train_loss:.4f} | "
             f"train_acc: {train_acc:.4f} | "
-            f"test_loss: {test_loss:.4f} | "
-            f"test_acc: {test_acc:.4f}"
+            f"test_loss: {val_loss:.4f} | "
+            f"test_acc: {val_acc:.4f}"
         )
 
         results["train_loss"].append(train_loss)
         results["train_acc"].append(train_acc)
-        results["test_loss"].append(test_loss)
-        results["test_acc"].append(test_acc)
+        results["test_loss"].append(val_loss)
+        results["test_acc"].append(val_acc)
 
         plot(results)
     plt.ioff()
     plt.show()
     torch.save(model.state_dict(), save_path)
+    _, test_acc = test_step(
+        model=model, dataloader=val_dataloader, loss_fn=loss_fn, device=device
+    )
+    print(test_acc)
     print(f"Model saved to {save_path}")
 
     return results
