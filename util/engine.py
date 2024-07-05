@@ -65,6 +65,7 @@ def train(
     loss_fn: torch.nn.Module,
     epochs: int,
     device: torch.device,
+    save_path: str,
 ) -> Dict[str, List]:
     results = {"train_loss": [], "train_acc": [], "test_loss": [], "test_acc": []}
 
@@ -113,4 +114,8 @@ def train(
 
         fig.canvas.draw()
         plt.pause(0.1)
+
+    torch.save(model.state_dict(), save_path)
+    print(f"Model saved to {save_path}")
+
     return results
