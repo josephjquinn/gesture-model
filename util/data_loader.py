@@ -1,4 +1,3 @@
-from torchvision import transforms
 from torch.utils.data import DataLoader
 from torch.utils.data import random_split
 from util.dataset import landmarkDataset, imageDataset
@@ -7,10 +6,11 @@ import torch
 
 def create_image_dataloaders(
     data_dir: str,
-    transform: transforms.Compose,
+    resize: (int, int),
+    normalize: False,
     batch_size: int,
 ):
-    dataset = imageDataset(root_dir=data_dir, transform=transform)
+    dataset = imageDataset(root_dir=data_dir, resize=resize, normalize=normalize)
     num_data = len(dataset)
     num_train = int(0.8 * num_data)
     num_val = int(0.1 * num_data)
@@ -46,6 +46,8 @@ def create_image_dataloaders(
 def create_landmark_dataloaders(
     file: str,
     batch_size: int,
+    normalize: bool,
+    center_wrist: bool,
 ):
     dataset = landmarkDataset(file)
     num_data = len(dataset)

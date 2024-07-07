@@ -15,9 +15,10 @@ mp_hands = mp.solutions.hands
 
 
 class imageDataset(Dataset):
-    def __init__(self, root_dir, transform=None):
+    def __init__(self, root_dir, resize=None, normalize=False):
         self.root_dir = root_dir
-        self.transform = transform
+        self.resize = resize
+        self.normalize = normalize
         self.image_paths = []
         self.labels = []
 
@@ -33,6 +34,13 @@ class imageDataset(Dataset):
                     img_path = os.path.join(label_dir, img_name)
                     self.image_paths.append(img_path)
                     self.labels.append(label_idx)
+
+        if self.normalize:
+            self.mean, self.std = self.calculate_mean_std()
+        else:
+            self.mean, self.std = None, None
+
+        self.transform = self.build_transform()
 
     def __len__(self):
         return len(self.image_paths)
@@ -86,34 +94,42 @@ class imageDataset(Dataset):
         plt.tight_layout()
         plt.show()
 
-    def show_one_image_per_directory(dataset, num_dirs=27, rows=3, cols=9):
-        fig, axes = plt.subplots(rows, cols, figsize=(cols * 2, rows * 2))
-        axes = axes.flatten()
+    def build_transform(self):
+        transform_list = []
 
-        seen_labels = set()
-        count = 0
-        for idx in range(len(dataset)):
-            if count >= num_dirs:
-                break
-            image, label = dataset[idx]
-            if label not in seen_labels:
-                seen_labels.add(label)
-                image = image.permute(1, 2, 0)
-                axes[count].imshow(image)
-                axes[count].set_title(f"Label: {label}", fontsize=8)
-                axes[count].axis("off")
-                count += 1
+        if self.resize:
+            transform_list.append(transforms.Resize(self.resize))
 
-        for j in range(count, len(axes)):
-            axes[j].axis("off")
+        transform_list.append(transforms.ToTensor())
 
-        plt.tight_layout()
-        plt.show()
+        if self.normalize:
+            transform_list.append(transforms.Normalize(self.mean, self.std))
+
+        return transforms.Compose(transform_list)
+
+    def calculate_mean_std(self):
+        mean = torch.zeros(3)  # Assuming RGB images, adjust dimensions if necessary
+        std = torch.zeros(3)
+
+        num_samples = len(self.image_paths)
+
+        for img_path in self.image_paths:
+            img = Image.open(img_path).convert("RGB")
+            img_tensor = transforms.ToTensor()(img)
+            mean += torch.mean(img_tensor, dim=(1, 2))
+            std += torch.std(img_tensor, dim=(1, 2))
+
+        mean /= num_samples
+        std /= num_samples
+
+        return mean.tolist(), std.tolist()
 
 
 class landmarkDataset(Dataset):
-    def __init__(self, pickle_file):
+    def __init__(self, pickle_file, normalize=False, center_wrist=True):
         self.data = self.load_data(pickle_file)
+        self.normalize = normalize
+        self.center_wrist = center_wrist
 
     def __len__(self):
         return len(self.data)
@@ -127,6 +143,13 @@ class landmarkDataset(Dataset):
         label = sample["label"]
 
         landmarks = torch.tensor(landmarks, dtype=torch.float32)
+
+        if self.normalize:
+            landmarks = self.normalize_coordinates(landmarks)
+
+        if self.center_wrist:
+            landmarks = self.center_coordinates(landmarks)
+
         label = torch.tensor(label)
         return landmarks, label
 
@@ -175,3 +198,14 @@ class landmarkDataset(Dataset):
 
         plt.tight_layout()
         plt.show()
+
+    def normalize_coordinates(self, coords):
+        min_val = coords.min(0)[0]
+        max_val = coords.max(0)[0]
+        normalized_coords = (coords - min_val) / (max_val - min_val)
+        return normalized_coords
+
+    def center_coordinates(self, coords):
+        wrist_offset = coords[0]  # Assuming wrist is at index 0
+        centered_coords = coords - wrist_offset
+        return centered_coords
