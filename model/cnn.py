@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from model.ann import LandmarkANN
+
 
 class ImageCNN(nn.Module):
     def __init__(self):
@@ -29,9 +31,9 @@ class ImageCNN(nn.Module):
         return x
 
 
-class LandnarkCNN(nn.Module):
+class LandmarkCNN(nn.Module):
     def __init__(self):
-        super(LandnarkCNN, self).__init__()
+        super(LandmarkCNN, self).__init__()
         self.conv1 = nn.Conv1d(3, 6, kernel_size=5, stride=1, padding=2)
         self.conv2 = nn.Conv1d(6, 16, kernel_size=5, stride=1, padding=2)
 
