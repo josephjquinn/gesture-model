@@ -2,9 +2,9 @@
 
 This project implements a neural network training framework for American Sign Language (ASL) hand gesture recognition. It includes multiple model architectures suitable for both image and landmark data.
 
-<img width =250 src = "./imgs/input.png">
-<img width =250 src = "./imgs/norm_input.png">
-<img width =250 height=250 src = "./imgs/cv_input.png">
+<img width =200 src = "./imgs/input.png">
+<img width =200 src = "./imgs/norm_input.png">
+<img width =200 height=250 src = "./imgs/cv_input.png">
 
 ### 3D vs 2D Visualization
 
