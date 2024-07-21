@@ -1,0 +1,21 @@
+
+data:
+  data_type: "landmark"
+  data_path: "./landmark_data_large.pickle"
+  batch_size: 16
+  train_split: 0.75
+  image_size: 224
+  normalize: True
+  center_wrist: True
+  num_classes: 30
+
+hyper:
+  model: "cnn"
+  epochs: 30
+  learning_rate: 0.01
+  optimizer: "sgd"
+  criterion: "CrossEntropyLoss"
+
+device: "mps"
+
+save_path: "./output/lc.pth"

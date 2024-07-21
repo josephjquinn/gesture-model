@@ -1,0 +1,20 @@
+data:
+  data_type: "image"
+  data_path: "./cropped/"
+  batch_size: 8
+  train_split: 0.75
+  image_size: 224
+  normalize: False
+  center_wrist: False
+  num_classes: 3
+
+hyper:
+  model: "ann"
+  epochs: 5
+  learning_rate: 0.001
+  optimizer: "sgd"
+  criterion: "CrossEntropyLoss"
+
+device: "mps"
+
+save_path: "./output/ia.pth"
