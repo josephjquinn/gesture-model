@@ -1,7 +1,6 @@
 import os
 from PIL import Image
 import torch
-import numpy as np
 import random
 from matplotlib import pyplot as plt
 from torch.utils.data import Dataset
@@ -23,6 +22,7 @@ class imageDataset(Dataset):
         self.labels = []
 
         label_dirs = sorted(os.listdir(root_dir))
+        print(label_dirs)
 
         for label_idx, label_name in enumerate(label_dirs):
             label_dir = os.path.join(root_dir, label_name)
@@ -98,7 +98,7 @@ class imageDataset(Dataset):
         transform_list = []
 
         if self.resize:
-            transform_list.append(transforms.Resize(self.resize))
+            transform_list.append(transforms.Resize((self.resize, self.resize)))
 
         transform_list.append(transforms.ToTensor())
 
@@ -108,7 +108,7 @@ class imageDataset(Dataset):
         return transforms.Compose(transform_list)
 
     def calculate_mean_std(self):
-        mean = torch.zeros(3)  # Assuming RGB images, adjust dimensions if necessary
+        mean = torch.zeros(3)
         std = torch.zeros(3)
 
         num_samples = len(self.image_paths)
@@ -124,9 +124,26 @@ class imageDataset(Dataset):
 
         return mean.tolist(), std.tolist()
 
+    def display_image_from_index(self, idx):
+        """
+        Displays an image from the dataset at the given index.
+        """
+        # Retrieve the image and label
+        image, label = self[idx]
+
+        # Convert tensor to PIL image
+        image = transforms.ToPILImage()(image)
+
+        # Display image
+        plt.figure(figsize=(8, 8))
+        plt.imshow(image)
+        plt.title(f"Label: {label}")
+        plt.axis("off")
+        plt.show()
+
 
 class landmarkDataset(Dataset):
-    def __init__(self, pickle_file, normalize=False, center_wrist=True):
+    def __init__(self, pickle_file, normalize=True, center_wrist=False):
         self.data = self.load_data(pickle_file)
         self.normalize = normalize
         self.center_wrist = center_wrist
@@ -162,39 +179,69 @@ class landmarkDataset(Dataset):
                 flattened_data.append(sample)
         return flattened_data
 
-    def show_random_landmarks(self, n=5):
-        random_samples_idx = random.sample(range(len(self)), k=n)
+    def display_landmarks(self, position):
+        landmarks, label = self[position]
+        x = landmarks[:, 0]
+        y = landmarks[:, 1]
+        z = landmarks[:, 2]
 
-        fig, axes = plt.subplots(1, n, figsize=(n * 4, 4))
+        # Plotting 3D
+        fig = plt.figure(figsize=(14, 6))
+        ax1 = fig.add_subplot(121, projection="3d")
+        ax1.scatter(x, y, z, c="green", marker="o", linewidths=6)
 
-        for i, targ_sample in enumerate(random_samples_idx):
-            landmarks, label = self[targ_sample]
-            num_landmarks = len(landmarks)
-            annotated_image = np.ones((512, 512, 3), dtype=np.uint8) * 255
+        finger_connections = [
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 4),  # Thumb
+            (0, 5),
+            (5, 6),
+            (6, 7),
+            (7, 8),  # Index finger
+            (9, 10),
+            (10, 11),
+            (11, 12),  # Middle finger
+            (13, 14),
+            (14, 15),
+            (15, 16),  # Ring finger
+            (0, 17),
+            (17, 18),
+            (18, 19),
+            (19, 20),  # Little finger
+            (0, 5),
+            (5, 9),
+            (9, 13),
+            (13, 17),
+        ]
 
-            # Convert landmarks to the format expected by MediaPipe
-            landmark_list = []
-            for landmark in landmarks:
-                x, y, z = landmark
-                landmark_list.append(
-                    mp.framework.formats.landmark_pb2.NormalizedLandmark(x=x, y=y, z=z)
-                )
-
-            hand_landmarks = mp.framework.formats.landmark_pb2.NormalizedLandmarkList(
-                landmark=landmark_list
+        for connection in finger_connections:
+            start, end = connection
+            ax1.plot(
+                [x[start], x[end]],
+                [y[start], y[end]],
+                [z[start], z[end]],
+                color="black",
+                linewidth=5,
             )
 
-            mp_drawing.draw_landmarks(
-                image=annotated_image,
-                landmark_list=hand_landmarks,
-                connections=mp_hands.HAND_CONNECTIONS,
-                landmark_drawing_spec=mp_drawing_styles.get_default_hand_landmarks_style(),
-                connection_drawing_spec=mp_drawing_styles.get_default_hand_connections_style(),
-            )
+        ax1.set_xlabel("X Axis")
+        ax1.set_ylabel("Y Axis")
+        ax1.set_zlabel("Z Axis")
+        ax1.view_init(elev=-70, azim=-90)
 
-            axes[i].imshow(annotated_image)
-            axes[i].set_title(f"Label: {label.item()}", fontsize=8)
-            axes[i].axis("off")
+        # Plotting 2D
+        ax2 = fig.add_subplot(122)
+        ax2.scatter(x, y, c="r", marker="o")
+
+        for connection in finger_connections:
+            start, end = connection
+            ax2.plot([x[start], x[end]], [y[start], y[end]], color="r")
+
+        ax2.set_xlabel("X Axis")
+        ax2.set_ylabel("Y Axis")
+        ax2.set_ylim(ax2.get_ylim()[::-1])
+        ax2.set_title(f"Label: {label}")
 
         plt.tight_layout()
         plt.show()
