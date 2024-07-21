@@ -1,59 +1,61 @@
-import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
-from model.ann import LandmarkANN
 
 
 class ImageCNN(nn.Module):
-    def __init__(self):
+    def __init__(self, num_classes):
         super(ImageCNN, self).__init__()
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.conv1 = nn.Conv2d(
+            in_channels=3, out_channels=16, kernel_size=3, stride=1, padding=1
+        )
+        self.conv2 = nn.Conv2d(
+            in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1
+        )
+        self.conv3 = nn.Conv2d(
+            in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1
+        )
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+        self.fc1 = nn.Linear(64 * 7 * 7, 512)
+        self.fc2 = nn.Linear(512, num_classes)
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((7, 7))
 
-        # Calculate the output size after conv2 and pooling
-        self.fc1_input_size = (
-            16 * 59 * 59
-        )  # Adjust based on actual output size after flattening
-
-        self.fc1 = nn.Linear(self.fc1_input_size, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 30)
+        self.flatten = nn.Flatten()
+        self.relu = nn.ReLU()
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = torch.flatten(x, 1)  # Flatten all dimensions except batch
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = self.relu(self.conv1(x))
+        x = self.pool(x)
+        x = self.relu(self.conv2(x))
+        x = self.pool(x)
+        x = self.relu(self.conv3(x))
+        x = self.pool(x)
+        x = self.adaptive_pool(x)
+
+        x = self.flatten(x)
+        x = self.relu(self.fc1(x))
+        x = self.fc2(x)
+
         return x
 
 
 class LandmarkCNN(nn.Module):
-    def __init__(self):
+    def __init__(self, num_classes):
         super(LandmarkCNN, self).__init__()
         self.conv1 = nn.Conv1d(3, 6, kernel_size=5, stride=1, padding=2)
         self.conv2 = nn.Conv1d(6, 16, kernel_size=5, stride=1, padding=2)
 
-        # Fully connected layers
-        self.fc1 = nn.Linear(
-            21 * 16, 120
-        )  # Adjust input size based on output channels and number of rows (21)
+        self.fc1 = nn.Linear(21 * 16, 120)
         self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 30)  # Output layer with 30 classes
+        self.fc3 = nn.Linear(84, num_classes)
+
+        self.flatten = nn.Flatten()
+        self.relu = nn.ReLU()
 
     def forward(self, x):
-        # Input x has shape (batch_size, 21, 3)
-        x = x.permute(0, 2, 1)  # Shape becomes (batch_size, 3, 21)
-
-        x = F.relu(self.conv1(x))  # Output shape: (batch_size, 6, 21)
-        x = F.relu(self.conv2(x))  # Output shape: (batch_size, 16, 21)
-
-        # Flatten
-        x = x.view(-1, 21 * 16)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        x = x.permute(0, 2, 1)
+        x = self.relu(self.conv1(x))
+        x = self.relu(self.conv2(x))
+        x = self.flatten(x)
+        x = self.relu(self.fc1(x))
+        x = self.relu(self.fc2(x))
         x = self.fc3(x)
         return x
