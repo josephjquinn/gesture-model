@@ -1,10 +1,11 @@
 # Gesture Model Builder
 
 This project implements a neural network training framework for American Sign Language (ASL) hand gesture recognition. It includes multiple model architectures suitable for both image and landmark data.
-
-<img width =200 src = "./imgs/input.png">
-<img width =200 src = "./imgs/norm_input.png">
-<img width =200 height=250 src = "./imgs/cv_input.png">
+<div style="display: flex; align-items: center;">
+  <img width =200 src = "./imgs/input.png">
+  <img width =200 src = "./imgs/norm_input.png">
+  <img width =200 height=200 src = "./imgs/cv_input.png">
+</div>
 
 ### 3D vs 2D Visualization
 
