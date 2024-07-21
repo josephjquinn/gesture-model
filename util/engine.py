@@ -61,7 +61,6 @@ def plot(results: Dict[str, List[float]]) -> None:
     plt.clf()
 
     plt.subplot(1, 2, 1)
-    plt.title("Epoch Loss")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.plot(results["train_loss"], "-r", label="train")
@@ -70,7 +69,6 @@ def plot(results: Dict[str, List[float]]) -> None:
     plt.ylim(ymin=0)
 
     plt.subplot(1, 2, 2)
-    plt.title("Accuracy")
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
     plt.plot(results["train_acc"], "-r", label="train")
@@ -96,7 +94,7 @@ def train(
     results = {"train_loss": [], "train_acc": [], "test_loss": [], "test_acc": []}
 
     plt.ion()
-    plt.figure(figsize=(15, 6))
+    plt.figure(figsize=(8, 4))
 
     for epoch in range(epochs):
         train_loss, train_acc = train_step(
