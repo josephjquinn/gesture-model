@@ -1,6 +1,6 @@
 data:
   data_type: "image"
-  data_path: "./cropped/"
+  data_path: "./data/cropped/"
   batch_size: 8
   train_split: 0.75
   image_size: 224
