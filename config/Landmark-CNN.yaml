@@ -1,18 +1,18 @@
 
 data:
   data_type: "landmark"
-  data_path: "./landmark_data_large.pickle"
+  data_path: "./data/landmark_data_myself.pickle"
   batch_size: 16
   train_split: 0.75
   image_size: 224
   normalize: True
-  center_wrist: True
+  center_wrist: False
   num_classes: 30
 
 hyper:
   model: "cnn"
   epochs: 30
-  learning_rate: 0.01
+  learning_rate: 0.05
   optimizer: "sgd"
   criterion: "CrossEntropyLoss"
 
